@@ -92,17 +92,52 @@
         }
 
         tr.no-hover td {
-            background-color: #f9f9f9; /* Light background for no hover effect */
+            background-color: #f9f9f9;
         }
 
         tr.no-hover:hover {
-            background-color: transparent; /* Remove hover effect */
+            background-color: transparent;
+        }
+
+        /* === Loader Overlay === */
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5); /* dark semi-transparent layer */
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+
+        .overlay.active {
+            display: flex;
+        }
+
+        /* Spinner */
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-top: 6px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Book Stock Tracker</h1>
+
         <form id="bookForm">
             <input type="text" id="bookTitle" placeholder="Book Title" required>
             <select id="language" required>
@@ -111,7 +146,7 @@
                 <option value="Marathi">Marathi</option>
                 <option value="English">English</option>
                 <option value="Hindi">Hindi</option>
-				<option value="Telugu">Telugu</option>
+                <option value="Telugu">Telugu</option>
             </select>
             <input type="number" id="quantity" placeholder="Quantity" required>
             <div class="button-container">
@@ -119,6 +154,7 @@
                 <button type="button" id="updateButton">Update</button>
             </div>
         </form>
+
         <table id="bookTable">
             <thead>
                 <tr>
@@ -131,15 +167,31 @@
             </thead>
             <tbody></tbody>
         </table>
+
         <div class="update-message" id="updateMessage"></div>
     </div>
+
+    <!-- Loader Overlay -->
+    <div id="overlay" class="overlay">
+        <div class="loader"></div>
+    </div>
+
     <script>
         const addButton = document.getElementById('addButton');
         const updateButton = document.getElementById('updateButton');
         const bookTableBody = document.querySelector('#bookTable tbody');
         const updateMessage = document.getElementById('updateMessage');
+        const overlay = document.getElementById('overlay');
 
-        const url = 'https://script.google.com/macros/s/AKfycbyHAlTWWYGDG7GcpVEVRF7V7m2UUISoHeEYjtjH0NZ0BNqgB4-EZAcxc2ob-kQIa6Dh/exec'; // Replace with your web app URL
+        const url = 'https://script.google.com/macros/s/AKfycbyHAlTWWYGDG7GcpVEVRF7V7m2UUISoHeEYjtjH0NZ0BNqgB4-EZAcxc2ob-kQIa6Dh/exec';
+
+        function showLoader() {
+            overlay.classList.add('active');
+        }
+
+        function hideLoader() {
+            overlay.classList.remove('active');
+        }
 
         addButton.addEventListener('click', () => {
             const title = document.getElementById('bookTitle').value;
@@ -147,13 +199,12 @@
             const quantity = document.getElementById('quantity').value;
 
             if (title && language && quantity) {
+                showLoader();
                 fetch(`${url}?action=add&title=${encodeURIComponent(title)}&language=${encodeURIComponent(language)}&quantity=${encodeURIComponent(quantity)}`)
                     .then(response => response.text())
-                    .then(data => {
-                        console.log(data);
-                        fetchRecords(); // Refresh the table after adding
-                    })
-                    .catch(error => console.error('Error:', error));
+                    .then(() => fetchRecords())
+                    .catch(error => console.error('Error:', error))
+                    .finally(() => hideLoader());
 
                 document.getElementById('bookForm').reset();
             } else {
@@ -174,10 +225,11 @@
         });
 
         function fetchRecords() {
+            showLoader();
             fetch(`${url}?action=get`)
                 .then(response => response.json())
                 .then(data => {
-                    bookTableBody.innerHTML = ''; // Clear existing rows
+                    bookTableBody.innerHTML = '';
                     data.forEach((row, index) => {
                         const tableRow = `<tr class="no-hover">
                             <td>${row[0]}</td>
@@ -192,71 +244,50 @@
                         bookTableBody.insertAdjacentHTML('beforeend', tableRow);
                     });
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => console.error('Error fetching data:', error))
+                .finally(() => hideLoader());
         }
 
         // Fetch records on page load
         fetchRecords();
 
-        // Event delegation for edit and delete buttons
+        // Edit / Delete functionality
         bookTableBody.addEventListener('click', (e) => {
             const target = e.target;
 
-            // Edit functionality
-			if (target.classList.contains('edit-button')) {
-				const row = target.closest('tr');
-				const quantityCell = row.querySelector('.quantity');
-				const bookTitle = row.cells[0].textContent; // Get the book title
-				const language = row.cells[1].textContent; // Get the language
-				const oldQuantity = quantityCell.textContent; // Get the current quantity
-				const newQuantity = prompt("Enter new quantity:", oldQuantity);
-				
-				if (newQuantity !== null) {
-					quantityCell.textContent = newQuantity;
-					const dateTimeCell = row.querySelector('.date-time');
-					dateTimeCell.textContent = new Date().toLocaleString('en-GB', {
-						day: '2-digit',
-						month: 'short',
-						year: 'numeric',
-						hour: 'numeric',
-						minute: 'numeric',
-						hour12: true
-					});
+            if (target.classList.contains('edit-button')) {
+                const row = target.closest('tr');
+                const quantityCell = row.querySelector('.quantity');
+                const bookTitle = row.cells[0].textContent;
+                const language = row.cells[1].textContent;
+                const oldQuantity = quantityCell.textContent;
+                const newQuantity = prompt("Enter new quantity:", oldQuantity);
 
-					// Send update to Google Sheets
-					fetch(`${url}?action=update&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}&quantity=${encodeURIComponent(newQuantity)}`)
-						.then(response => response.text())
-						.then(data => {
-							console.log(data);
-							fetchRecords(); // Refresh records to reflect changes
-						})
-						.catch(error => console.error('Error:', error));
-				}
-			}
+                if (newQuantity !== null) {
+                    showLoader();
+                    fetch(`${url}?action=update&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}&quantity=${encodeURIComponent(newQuantity)}`)
+                        .then(response => response.text())
+                        .then(() => fetchRecords())
+                        .catch(error => console.error('Error updating:', error))
+                        .finally(() => hideLoader());
+                }
+            }
 
+            if (target.classList.contains('delete-button')) {
+                const row = target.closest('tr');
+                const bookTitle = row.cells[0].textContent;
+                const language = row.cells[1].textContent;
 
-           // Delete functionality
-		if (target.classList.contains('delete-button')) {
-			const row = target.closest('tr');
-			const bookTitle = row.cells[0].textContent; // Get the book title
-			const language = row.cells[1].textContent; // Get the language
-			
-			if (confirm("Are you sure you want to delete this record?")) {
-				row.remove();
-				
-				// Send delete request to Google Sheets
-				fetch(`${url}?action=delete&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}`)
-					.then(response => response.text())
-					.then(data => {
-						console.log(data);
-						fetchRecords(); // Refresh records to reflect changes
-					})
-					.catch(error => console.error('Error:', error));
-			}
-		}
+                if (confirm("Are you sure you want to delete this record?")) {
+                    showLoader();
+                    fetch(`${url}?action=delete&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}`)
+                        .then(response => response.text())
+                        .then(() => fetchRecords())
+                        .catch(error => console.error('Error deleting:', error))
+                        .finally(() => hideLoader());
+                }
+            }
         });
     </script>
 </body>
 </html>
-
-
