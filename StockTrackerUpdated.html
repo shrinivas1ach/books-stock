@@ -134,6 +134,9 @@
         }
     </style>
 </head>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
 <body>
     <div class="container">
         <h1>Book Stock Tracker</h1>
@@ -154,7 +157,9 @@
                 <button type="button" id="updateButton">Update</button>
             </div>
         </form>
-
+		<div class="button-container">
+			<button id="downloadPDF" style="margin-top: 15px; background-color: #999966;">Download as PDF</button>
+		</div>
         <table id="bookTable">
             <thead>
                 <tr>
@@ -288,6 +293,62 @@
                 }
             }
         });
+		
+		document.getElementById('downloadPDF').addEventListener('click', () => {
+		const { jsPDF } = window.jspdf;
+		const doc = new jsPDF('p', 'mm', 'a4');
+		const margin = 15; // margin in mm
+		const fontSize = 12;
+
+		// Prepare table headers (excluding Actions column)
+		const headers = [['Book Title', 'Language', 'Quantity']];//, 'Date-Time']];
+
+		// Prepare table data
+		const tableData = [];
+		document.querySelectorAll('#bookTable tbody tr').forEach(row => {
+			const cells = row.querySelectorAll('td');
+			tableData.push([
+				cells[0].textContent.trim(),
+				cells[1].textContent.trim(),
+				cells[2].textContent.trim(),
+				//cells[3].textContent.trim()
+			]);
+		});
+
+		// Add report title
+		doc.setFontSize(16);
+		doc.text('Book Stock Report', doc.internal.pageSize.getWidth() / 2, margin, { align: 'center' });
+
+		// Add some spacing before table
+		const startY = margin + 10;
+
+		// Add table using AutoTable
+		doc.autoTable({
+			head: headers,
+			body: tableData,
+			startY: startY,
+			margin: { left: margin, right: margin },
+			styles: { fontSize: fontSize },
+			headStyles: { fillColor: [128, 0, 0] }, // light gray header
+			theme: 'grid', // grid lines
+		});
+		
+		// Add footer text
+		const finalY = doc.lastAutoTable.finalY || startY + 10;
+		const now = new Date();
+		const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+		const timeStr = now.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
+		const footerText = `This is a computer generated PDF. Printed on ${dateStr}, ${timeStr}`;
+		// Set font to italics
+		doc.setFont("consolas", "italic");
+		doc.setTextColor(128, 0, 0);
+		doc.setFontSize(10);
+		doc.text(footerText, margin, finalY + 10);
+
+		// Save PDF
+		const date = new Date().toISOString().split('T')[0];
+		doc.save(`StockReport.pdf`);
+	});
     </script>
 </body>
 </html>
