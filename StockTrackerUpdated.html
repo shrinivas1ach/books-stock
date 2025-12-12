@@ -1,165 +1,205 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Book Stock Tracker</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Stock Tracker - Responsive UI</title>
 
-        .container {
-            max-width: 600px;
-            margin: auto;
-            background: white;
-            padding: 20px;
-            border-radius: 5px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+<style>
+    /* ===== BASIC PAGE LOOK ===== */
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #4e73df, #8e44ad);
+        min-height: 100vh;
+        color: #333;
+    }
 
-        h1 {
-            text-align: center;
-        }
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 25px 20px;
+        border-radius: 18px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        backdrop-filter: blur(12px);
+        color: white;
+    }
 
-        form {
-            display: flex;
-            flex-direction: column;
-        }
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
 
-        input, select {
-            margin: 10px 0;
-            padding: 10px;
-        }
+    /* ===== BUTTONS ===== */
+    .button-container {
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
 
-        .button-container {
-            display: flex;
-            justify-content: space-between;
-        }
+    button {
+        padding: 10px 15px;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #1d72f2;
+        color: white;
+        transition: 0.25s;
+    }
 
-        button {
-            padding: 10px;
-            background-color: #28a745;
-            color: white;
-            border: none;
-            cursor: pointer;
-            flex: 1;
-            margin-right: 10px;
-        }
+    button:hover {
+        background: #125fce;
+    }
 
-        button:last-child {
-            margin-right: 0;
-        }
+    #downloadPDF {
+        background-color: #ffaa00;
+        color: #000;
+        font-weight: 600;
+    }
 
-        button:hover {
-            background-color: #218838;
-        }
+    #downloadPDF:hover {
+        background-color: #ff9900;
+    }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
+    /* ===== TABLE RESPONSIVE ===== */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
 
-        th, td {
-            padding: 10px;
-            border: 1px solid #ddd;
-            text-align: left;
-        }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(255, 255, 255, 0.85);
+        color: black;
+        border-radius: 10px;
+        overflow: hidden;
+        min-width: 0; /* allow shrinking */
+    }
 
-        th {
-            background-color: #f2f2f2;
-        }
+    th, td {
+        padding: 14px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
 
-        .update-message {
-            margin-top: 10px;
-            color: #007bff;
-            font-weight: bold;
-        }
+    th {
+        background: #f0f0f0;
+        font-weight: 600;
+    }
 
-        .actions {
-            display: flex;
-            justify-content: space-between;
-        }
+    tr:hover:not(.no-hover) {
+        background: #fafafa;
+    }
 
-        .edit-button, .delete-button {
-            cursor: pointer;
-            margin-left: 5px;
-            color: #007bff;
-        }
+    /* ===== LOW STOCK HIGHLIGHT ===== */
+    .low-stock {
+        background-color: #ffcccc !important;
+    }
 
-        tr.no-hover td {
-            background-color: #f9f9f9;
-        }
+    /* ===== LOADER OVERLAY ===== */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .overlay.active { display: flex; }
 
-        tr.no-hover:hover {
-            background-color: transparent;
-        }
+    .loader {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        border: 6px solid #eee;
+        border-top-color: #1d72f2;
+        animation: spin 1s linear infinite;
+    }
 
-        /* === Loader Overlay === */
-        .overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5); /* dark semi-transparent layer */
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-            transition: opacity 0.3s ease;
-        }
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
 
-        .overlay.active {
-            display: flex;
-        }
+    .update-message {
+        margin-top: 12px;
+        color: #ffeb3b;
+        font-weight: bold;
+    }
 
-        /* Spinner */
-        .loader {
-            border: 6px solid #f3f3f3;
-            border-top: 6px solid #007bff;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s linear infinite;
-        }
+    /* ===== MOBILE STACKED TABLE ===== */
+   @media (max-width: 600px) {
+    table, thead, tbody, th, td, tr {
+        display: block;
+        width: 100%;
+        box-sizing: border-box;
+    }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-    </style>
+    thead tr {
+        display: none; /* hide header */
+    }
+
+    tr {
+        margin-bottom: 15px;
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 12px;
+        padding: 12px 15px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border: none;
+        word-wrap: break-word;
+    }
+
+    td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border: none;
+        font-size: 14px;
+        flex-wrap: wrap;
+    }
+
+    td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #333;
+        flex: 1 1 45%; /* label takes up 45% max */
+    }
+
+    td span {
+        flex: 1 1 55%; /* value takes remaining width */
+        text-align: right;
+        word-wrap: break-word;
+    }
+
+    tr.low-stock {
+        background-color: rgba(255, 204, 204, 0.8) !important; /* softer red */
+    }
+}
+</style>
 </head>
+
+<!-- PDF Libraries -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
 
 <body>
-    <div class="container">
-        <h1>Book Stock Tracker</h1>
+<div class="container">
+    <h1>📚 Book Stock Tracker</h1>
 
-        <form id="bookForm">
-            <input type="text" id="bookTitle" placeholder="Book Title" required>
-            <select id="language" required>
-                <option value="" disabled selected>Select Language</option>
-                <option value="Kannada">Kannada</option>
-                <option value="Marathi">Marathi</option>
-                <option value="English">English</option>
-                <option value="Hindi">Hindi</option>
-                <option value="Telugu">Telugu</option>
-            </select>
-            <input type="number" id="quantity" placeholder="Quantity" required>
-            <div class="button-container">
-                <button type="button" id="addButton">Add</button>
-                <button type="button" id="updateButton">Update</button>
-            </div>
-        </form>
-		<div class="button-container">
-			<button id="downloadPDF" style="margin-top: 15px; background-color: #999966;">Download as PDF</button>
-		</div>
+    <div class="button-container">
+        <button id="downloadPDF">Download as PDF</button>
+    </div>
+
+    <div class="table-responsive">
         <table id="bookTable">
             <thead>
                 <tr>
@@ -167,188 +207,94 @@
                     <th>Language</th>
                     <th>Quantity</th>
                     <th>Date-Time</th>
-                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-
-        <div class="update-message" id="updateMessage"></div>
     </div>
 
-    <!-- Loader Overlay -->
-    <div id="overlay" class="overlay">
-        <div class="loader"></div>
-    </div>
+    <div class="update-message" id="updateMessage"></div>
+</div>
 
-    <script>
-        const addButton = document.getElementById('addButton');
-        const updateButton = document.getElementById('updateButton');
-        const bookTableBody = document.querySelector('#bookTable tbody');
-        const updateMessage = document.getElementById('updateMessage');
-        const overlay = document.getElementById('overlay');
+<div id="overlay" class="overlay">
+    <div class="loader"></div>
+</div>
 
-        const url = 'https://script.google.com/macros/s/AKfycbyHAlTWWYGDG7GcpVEVRF7V7m2UUISoHeEYjtjH0NZ0BNqgB4-EZAcxc2ob-kQIa6Dh/exec';
+<script>
+    const bookTableBody = document.querySelector('#bookTable tbody');
+    const updateMessage = document.getElementById('updateMessage');
+    const overlay = document.getElementById('overlay');
 
-        function showLoader() {
-            overlay.classList.add('active');
-        }
+    const url = 'https://script.google.com/macros/s/AKfycbyHAlTWWYGDG7GcpVEVRF7V7m2UUISoHeEYjtjH0NZ0BNqgB4-EZAcxc2ob-kQIa6Dh/exec';
 
-        function hideLoader() {
-            overlay.classList.remove('active');
-        }
+    function showLoader() { overlay.classList.add('active'); }
+    function hideLoader() { overlay.classList.remove('active'); }
 
-        addButton.addEventListener('click', () => {
-            const title = document.getElementById('bookTitle').value;
-            const language = document.getElementById('language').value;
-            const quantity = document.getElementById('quantity').value;
+    function fetchRecords() {
+        showLoader();
+        fetch(`${url}?action=get`)
+            .then(response => response.json())
+            .then(data => {
+                bookTableBody.innerHTML = '';
+                data.forEach(row => {
+                    const lowStockClass = parseInt(row[2]) < 10 ? 'low-stock' : '';
+                    const tableRow = `<tr class="${lowStockClass}">
+                        <td data-label="Book Title"><span>${row[0]}</span></td>
+                        <td data-label="Language"><span>${row[1]}</span></td>
+                        <td data-label="Quantity"><span>${row[2]}</span></td>
+                        <td data-label="Date-Time"><span>${row[3]}</span></td>
+                    </tr>`;
+                    bookTableBody.insertAdjacentHTML('beforeend', tableRow);
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error))
+            .finally(() => hideLoader());
+    }
 
-            if (title && language && quantity) {
-                showLoader();
-                fetch(`${url}?action=add&title=${encodeURIComponent(title)}&language=${encodeURIComponent(language)}&quantity=${encodeURIComponent(quantity)}`)
-                    .then(response => response.text())
-                    .then(() => fetchRecords())
-                    .catch(error => console.error('Error:', error))
-                    .finally(() => hideLoader());
+    fetchRecords(); // initial fetch
 
-                document.getElementById('bookForm').reset();
-            } else {
-                alert("Please fill in all fields.");
-            }
+    // PDF Download
+    document.getElementById('downloadPDF').addEventListener('click', () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const margin = 15;
+        const fontSize = 12;
+
+        const headers = [['Book Title', 'Language', 'Quantity']];
+        const tableData = [];
+
+        document.querySelectorAll('#bookTable tbody tr').forEach(row => {
+            const cells = row.querySelectorAll('td');
+            tableData.push([cells[0].textContent, cells[1].textContent, cells[2].textContent]);
         });
 
-        updateButton.addEventListener('click', () => {
-            const dateTime = new Date().toLocaleString('en-GB', {
-                day: '2-digit',
-                month: 'short',
-                year: 'numeric',
-                hour: 'numeric',
-                minute: 'numeric',
-                hour12: true
-            });
-            updateMessage.textContent = `Updated on: ${dateTime}`;
+        doc.setFontSize(16);
+        doc.text('Book Stock Report', doc.internal.pageSize.getWidth() / 2, margin, { align: 'center' });
+
+        const startY = margin + 10;
+
+        doc.autoTable({
+            head: headers,
+            body: tableData,
+            startY: startY,
+            margin: { left: margin, right: margin },
+            styles: { fontSize: fontSize },
+            headStyles: { fillColor: [128, 0, 0] },
+            theme: 'grid'
         });
 
-        function fetchRecords() {
-            showLoader();
-            fetch(`${url}?action=get`)
-                .then(response => response.json())
-                .then(data => {
-                    bookTableBody.innerHTML = '';
-                    data.forEach((row, index) => {
-                        const tableRow = `<tr class="no-hover">
-                            <td>${row[0]}</td>
-                            <td>${row[1]}</td>
-                            <td class="quantity">${row[2]}</td>
-                            <td class="date-time">${row[3]}</td>
-                            <td class="actions">
-                                <span class="edit-button" data-index="${index}">✎</span>
-                                <span class="delete-button" data-index="${index}">🗑️</span>
-                            </td>
-                        </tr>`;
-                        bookTableBody.insertAdjacentHTML('beforeend', tableRow);
-                    });
-                })
-                .catch(error => console.error('Error fetching data:', error))
-                .finally(() => hideLoader());
-        }
+        const finalY = doc.lastAutoTable.finalY || startY + 10;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const footerText = `This is a computer generated PDF. Printed on ${dateStr}, ${timeStr}`;
+        doc.setFont("consolas", "italic");
+        doc.setTextColor(128, 0, 0);
+        doc.setFontSize(10);
+        doc.text(footerText, margin, finalY + 10);
 
-        // Fetch records on page load
-        fetchRecords();
-
-        // Edit / Delete functionality
-        bookTableBody.addEventListener('click', (e) => {
-            const target = e.target;
-
-            if (target.classList.contains('edit-button')) {
-                const row = target.closest('tr');
-                const quantityCell = row.querySelector('.quantity');
-                const bookTitle = row.cells[0].textContent;
-                const language = row.cells[1].textContent;
-                const oldQuantity = quantityCell.textContent;
-                const newQuantity = prompt("Enter new quantity:", oldQuantity);
-
-                if (newQuantity !== null) {
-                    showLoader();
-                    fetch(`${url}?action=update&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}&quantity=${encodeURIComponent(newQuantity)}`)
-                        .then(response => response.text())
-                        .then(() => fetchRecords())
-                        .catch(error => console.error('Error updating:', error))
-                        .finally(() => hideLoader());
-                }
-            }
-
-            if (target.classList.contains('delete-button')) {
-                const row = target.closest('tr');
-                const bookTitle = row.cells[0].textContent;
-                const language = row.cells[1].textContent;
-
-                if (confirm("Are you sure you want to delete this record?")) {
-                    showLoader();
-                    fetch(`${url}?action=delete&title=${encodeURIComponent(bookTitle)}&language=${encodeURIComponent(language)}`)
-                        .then(response => response.text())
-                        .then(() => fetchRecords())
-                        .catch(error => console.error('Error deleting:', error))
-                        .finally(() => hideLoader());
-                }
-            }
-        });
-		
-		document.getElementById('downloadPDF').addEventListener('click', () => {
-		const { jsPDF } = window.jspdf;
-		const doc = new jsPDF('p', 'mm', 'a4');
-		const margin = 15; // margin in mm
-		const fontSize = 12;
-
-		// Prepare table headers (excluding Actions column)
-		const headers = [['Book Title', 'Language', 'Quantity']];//, 'Date-Time']];
-
-		// Prepare table data
-		const tableData = [];
-		document.querySelectorAll('#bookTable tbody tr').forEach(row => {
-			const cells = row.querySelectorAll('td');
-			tableData.push([
-				cells[0].textContent.trim(),
-				cells[1].textContent.trim(),
-				cells[2].textContent.trim(),
-				//cells[3].textContent.trim()
-			]);
-		});
-
-		// Add report title
-		doc.setFontSize(16);
-		doc.text('Book Stock Report', doc.internal.pageSize.getWidth() / 2, margin, { align: 'center' });
-
-		// Add some spacing before table
-		const startY = margin + 10;
-
-		// Add table using AutoTable
-		doc.autoTable({
-			head: headers,
-			body: tableData,
-			startY: startY,
-			margin: { left: margin, right: margin },
-			styles: { fontSize: fontSize },
-			headStyles: { fillColor: [128, 0, 0] }, // light gray header
-			theme: 'grid', // grid lines
-		});
-		
-		// Add footer text
-		const finalY = doc.lastAutoTable.finalY || startY + 10;
-		const now = new Date();
-		const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-		const timeStr = now.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
-		const footerText = `This is a computer generated PDF. Printed on ${dateStr}, ${timeStr}`;
-		// Set font to italics
-		doc.setFont("consolas", "italic");
-		doc.setTextColor(128, 0, 0);
-		doc.setFontSize(10);
-		doc.text(footerText, margin, finalY + 10);
-
-		// Save PDF
-		const date = new Date().toISOString().split('T')[0];
-		doc.save(`StockReport.pdf`);
-	});
-    </script>
+        doc.save(`StockReport.pdf`);
+    });
+</script>
 </body>
 </html>
