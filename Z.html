@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Book Stock Tracker - Responsive UI</title>
+
+<style>
+    /* ===== BASIC PAGE LOOK ===== */
+    body {
+        font-family: 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 20px;
+        background: linear-gradient(135deg, #4e73df, #8e44ad);
+        min-height: 100vh;
+        color: #333;
+    }
+
+    .container {
+        max-width: 900px;
+        margin: auto;
+        background: rgba(255, 255, 255, 0.15);
+        padding: 25px 20px;
+        border-radius: 18px;
+        box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+        backdrop-filter: blur(12px);
+        color: white;
+    }
+
+    h1 {
+        text-align: center;
+        margin-bottom: 20px;
+        font-weight: 700;
+        letter-spacing: 1px;
+    }
+
+    /* ===== BUTTONS ===== */
+    .button-container {
+        display: flex;
+        justify-content: flex-start;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-bottom: 20px;
+    }
+
+    button {
+        padding: 10px 15px;
+        font-size: 15px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        background: #1d72f2;
+        color: white;
+        transition: 0.25s;
+    }
+
+    button:hover {
+        background: #125fce;
+    }
+
+    #downloadPDF {
+        background-color: #ffaa00;
+        color: #000;
+        font-weight: 600;
+    }
+
+    #downloadPDF:hover {
+        background-color: #ff9900;
+    }
+
+    /* ===== TABLE RESPONSIVE ===== */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
+        min-width: 600px;
+        border-collapse: collapse;
+        background: rgba(255, 255, 255, 0.85);
+        color: black;
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    th, td {
+        padding: 14px;
+        border-bottom: 1px solid #ddd;
+        text-align: left;
+    }
+
+    th {
+        background: #f0f0f0;
+        font-weight: 600;
+    }
+
+    tr:hover:not(.no-hover) {
+        background: #fafafa;
+    }
+
+    /* ===== LOW STOCK HIGHLIGHT ===== */
+    .low-stock {
+        background-color: #ffcccc !important;
+    }
+
+    /* ===== LOADER OVERLAY ===== */
+    .overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+    }
+    .overlay.active { display: flex; }
+
+    .loader {
+        width: 55px;
+        height: 55px;
+        border-radius: 50%;
+        border: 6px solid #eee;
+        border-top-color: #1d72f2;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .update-message {
+        margin-top: 12px;
+        color: #ffeb3b;
+        font-weight: bold;
+    }
+</style>
+</head>
+
+<!-- PDF Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+<body>
+<div class="container">
+    <h1>📚 Book Stock Tracker</h1>
+
+    <div class="button-container">
+        <button id="downloadPDF">Download as PDF</button>
+    </div>
+
+    <div class="table-responsive">
+        <table id="bookTable">
+            <thead>
+                <tr>
+                    <th>Book Title</th>
+                    <th>Language</th>
+                    <th>Quantity</th>
+                    <th>Date-Time</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="update-message" id="updateMessage"></div>
+</div>
+
+<div id="overlay" class="overlay">
+    <div class="loader"></div>
+</div>
+
+<script>
+    const bookTableBody = document.querySelector('#bookTable tbody');
+    const updateMessage = document.getElementById('updateMessage');
+    const overlay = document.getElementById('overlay');
+
+    const url = 'https://script.google.com/macros/s/AKfycbyHAlTWWYGDG7GcpVEVRF7V7m2UUISoHeEYjtjH0NZ0BNqgB4-EZAcxc2ob-kQIa6Dh/exec';
+
+    function showLoader() { overlay.classList.add('active'); }
+    function hideLoader() { overlay.classList.remove('active'); }
+
+    function fetchRecords() {
+        showLoader();
+        fetch(`${url}?action=get`)
+            .then(response => response.json())
+            .then(data => {
+                bookTableBody.innerHTML = '';
+                data.forEach(row => {
+                    const lowStockClass = parseInt(row[2]) < 10 ? 'low-stock' : '';
+                    const tableRow = `<tr class="${lowStockClass}">
+                        <td>${row[0]}</td>
+                        <td>${row[1]}</td>
+                        <td>${row[2]}</td>
+                        <td>${row[3]}</td>
+                    </tr>`;
+                    bookTableBody.insertAdjacentHTML('beforeend', tableRow);
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error))
+            .finally(() => hideLoader());
+    }
+
+    fetchRecords(); // initial fetch
+
+    // PDF Download
+    document.getElementById('downloadPDF').addEventListener('click', () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        const margin = 15;
+        const fontSize = 12;
+
+        const headers = [['Book Title', 'Language', 'Quantity']];
+        const tableData = [];
+
+        document.querySelectorAll('#bookTable tbody tr').forEach(row => {
+            const cells = row.querySelectorAll('td');
+            tableData.push([cells[0].textContent, cells[1].textContent, cells[2].textContent]);
+        });
+
+        doc.setFontSize(16);
+        doc.text('Book Stock Report', doc.internal.pageSize.getWidth() / 2, margin, { align: 'center' });
+
+        const startY = margin + 10;
+
+        doc.autoTable({
+            head: headers,
+            body: tableData,
+            startY: startY,
+            margin: { left: margin, right: margin },
+            styles: { fontSize: fontSize },
+            headStyles: { fillColor: [128, 0, 0] },
+            theme: 'grid'
+        });
+
+        const finalY = doc.lastAutoTable.finalY || startY + 10;
+        const now = new Date();
+        const dateStr = now.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true });
+        const footerText = `This is a computer generated PDF. Printed on ${dateStr}, ${timeStr}`;
+        doc.setFont("consolas", "italic");
+        doc.setTextColor(128, 0, 0);
+        doc.setFontSize(10);
+        doc.text(footerText, margin, finalY + 10);
+
+        doc.save(`StockReport.pdf`);
+    });
+</script>
+</body>
+</html>
