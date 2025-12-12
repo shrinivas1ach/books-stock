@@ -137,10 +137,11 @@
     }
 
     /* ===== MOBILE STACKED TABLE ===== */
-    @media (max-width: 600px) {
+   @media (max-width: 600px) {
     table, thead, tbody, th, td, tr {
         display: block;
         width: 100%;
+        box-sizing: border-box;
     }
 
     thead tr {
@@ -154,29 +155,29 @@
         padding: 12px 15px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         border: none;
+        word-wrap: break-word;
     }
 
     td {
-        text-align: right;
-        padding-left: 50%;
-        position: relative;
-        font-size: 14px;
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
         border: none;
-        border-bottom: 1px solid #eee;
+        font-size: 14px;
+        flex-wrap: wrap;
     }
 
     td::before {
         content: attr(data-label);
-        position: absolute;
-        left: 15px;
-        width: 45%;
-        text-align: left;
         font-weight: 600;
         color: #333;
+        flex: 1 1 45%; /* label takes up 45% max */
     }
 
-    td:last-child {
-        border-bottom: none; /* remove bottom border on last cell */
+    td span {
+        flex: 1 1 55%; /* value takes remaining width */
+        text-align: right;
+        word-wrap: break-word;
     }
 
     tr.low-stock {
@@ -238,10 +239,10 @@
                 data.forEach(row => {
                     const lowStockClass = parseInt(row[2]) < 10 ? 'low-stock' : '';
                     const tableRow = `<tr class="${lowStockClass}">
-                        <td data-label="Book Title">${row[0]}</td>
-                        <td data-label="Language">${row[1]}</td>
-                        <td data-label="Quantity">${row[2]}</td>
-                        <td data-label="Date-Time">${row[3]}</td>
+                        <td data-label="Book Title"><span>${row[0]}</span></td>
+                        <td data-label="Language"><span>${row[1]}</span></td>
+                        <td data-label="Quantity"><span>${row[2]}</span></td>
+                        <td data-label="Date-Time"><span>${row[3]}</span></td>
                     </tr>`;
                     bookTableBody.insertAdjacentHTML('beforeend', tableRow);
                 });
@@ -297,4 +298,5 @@
 </script>
 </body>
 </html>
+
 
